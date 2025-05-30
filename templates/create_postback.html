@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Create Postback Configuration</h3>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="name" name="name" required
+                                   placeholder="Enter a name for this postback configuration">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="url" class="form-label">URL</label>
+                            <input type="url" class="form-control" id="url" name="url" required
+                                   placeholder="Enter the postback URL">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="method" class="form-label">HTTP Method</label>
+                            <select class="form-select" id="method" name="method" required>
+                                <option value="POST">POST</option>
+                                <option value="GET">GET</option>
+                                <option value="PUT">PUT</option>
+                                <option value="PATCH">PATCH</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="headers" class="form-label">Headers (JSON)</label>
+                            <textarea class="form-control" id="headers" name="headers" rows="3"
+                                    placeholder='{"Content-Type": "application/json", "Authorization": "Bearer token"}'></textarea>
+                            <div class="form-text">Enter headers as a JSON object. Leave empty for no custom headers.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="payload_template" class="form-label">Payload Template (JSON)</label>
+                            <textarea class="form-control" id="payload_template" name="payload_template" rows="10" required
+                                    placeholder='{
+    "survey_id": "{survey_id}",
+    "survey_title": "{survey_title}",
+    "response_id": "{response_id}",
+    "respondent_id": "{respondent_id}",
+    "submitted_at": "{submitted_at}",
+    "answers": {answers}
+}'></textarea>
+                            <div class="form-text">
+                                Use Python string formatting syntax. Available variables:
+                                <ul>
+                                    <li><code>{survey_id}</code> - Survey ID</li>
+                                    <li><code>{survey_title}</code> - Survey title</li>
+                                    <li><code>{response_id}</code> - Response ID</li>
+                                    <li><code>{respondent_id}</code> - Respondent ID</li>
+                                    <li><code>{submitted_at}</code> - Submission timestamp</li>
+                                    <li><code>{answers}</code> - Dictionary of question-answer pairs</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('postback_configs', survey_id=survey.id) }}" class="btn btn-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">Create Postback</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('headers').addEventListener('input', function() {
+    try {
+        const headers = JSON.parse(this.value);
+        this.classList.remove('is-invalid');
+        this.classList.add('is-valid');
+    } catch (e) {
+        this.classList.remove('is-valid');
+        this.classList.add('is-invalid');
+    }
+});
+
+document.getElementById('payload_template').addEventListener('input', function() {
+    try {
+        const template = this.value;
+        // Test the template with sample data
+        const testData = {
+            survey_id: 1,
+            survey_title: "Test Survey",
+            response_id: 1,
+            respondent_id: 1,
+            submitted_at: new Date().toISOString(),
+            answers: {"Question 1": "Answer 1"}
+        };
+        // Replace placeholders with test data
+        const result = template
+            .replace('{survey_id}', testData.survey_id)
+            .replace('{survey_title}', testData.survey_title)
+            .replace('{response_id}', testData.response_id)
+            .replace('{respondent_id}', testData.respondent_id)
+            .replace('{submitted_at}', testData.submitted_at)
+            .replace('{answers}', JSON.stringify(testData.answers));
+        JSON.parse(result); // Verify it's valid JSON
+        this.classList.remove('is-invalid');
+        this.classList.add('is-valid');
+    } catch (e) {
+        this.classList.remove('is-valid');
+        this.classList.add('is-invalid');
+    }
+});
+</script>
+{% endblock %} 

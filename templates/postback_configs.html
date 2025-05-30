@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Postback Configurations for {{ survey.title }}</h2>
+        <a href="{{ url_for('create_postback', survey_id=survey.id) }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Postback
+        </a>
+    </div>
+
+    {% if configs %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>URL</th>
+                    <th>Method</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for config in configs %}
+                <tr>
+                    <td>{{ config.name }}</td>
+                    <td>{{ config.url }}</td>
+                    <td><span class="badge bg-info">{{ config.method }}</span></td>
+                    <td>
+                        {% if config.is_active %}
+                        <span class="badge bg-success">Active</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('edit_postback', config_id=config.id) }}" 
+                               class="btn btn-sm btn-outline-primary"
+                               title="Edit postback configuration">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <a href="{{ url_for('postback_logs', config_id=config.id) }}" 
+                               class="btn btn-sm btn-outline-info"
+                               title="View postback logs">
+                                <i class="fas fa-history"></i> Logs
+                            </a>
+                            <button type="button" 
+                                    class="btn btn-sm btn-outline-success"
+                                    onclick="testPostback({{ config.id }})"
+                                    title="Test postback configuration">
+                                <i class="fas fa-play"></i> Test
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No postback configurations found. Click "New Postback" to create one.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Test Postback Modal -->
+<div class="modal fade" id="testPostbackModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Test Postback</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" title="Close modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="testPostbackForm">
+                    <div class="mb-3">
+                        <label for="testData" class="form-label">Test Data (JSON)</label>
+                        <textarea class="form-control" id="testData" rows="10" required
+                                placeholder="Enter test data in JSON format"></textarea>
+                    </div>
+                </form>
+                <div id="testResult" class="mt-3" style="display: none;">
+                    <h6>Result:</h6>
+                    <pre class="bg-light p-3 rounded"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="sendTestPostback()">Send Test</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentConfigId = null;
+const testModal = new bootstrap.Modal(document.getElementById('testPostbackModal'));
+
+function testPostback(configId) {
+    currentConfigId = configId;
+    document.getElementById('testData').value = JSON.stringify({
+        survey_id: {{ survey.id }},
+        survey_title: "{{ survey.title }}",
+        response_id: 1,
+        respondent_id: 1,
+        submitted_at: new Date().toISOString(),
+        answers: {
+            "Sample Question": "Sample Answer"
+        }
+    }, null, 2);
+    document.getElementById('testResult').style.display = 'none';
+    testModal.show();
+}
+
+function sendTestPostback() {
+    const testData = document.getElementById('testData').value;
+    const resultDiv = document.getElementById('testResult');
+    const resultPre = resultDiv.querySelector('pre');
+    
+    fetch(`/postbacks/${currentConfigId}/test`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `test_data=${encodeURIComponent(testData)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        resultDiv.style.display = 'block';
+        resultPre.textContent = JSON.stringify(data, null, 2);
+    })
+    .catch(error => {
+        resultDiv.style.display = 'block';
+        resultPre.textContent = `Error: ${error.message}`;
+    });
+}
+</script>
+{% endblock %} 

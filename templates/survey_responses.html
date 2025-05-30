@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Survey Responses - {{ survey.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2 class="card-title mb-0">Responses for {{ survey.title }}</h2>
+                        <a href="{{ url_for('view_survey', survey_id=survey.id) }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Survey
+                        </a>
+                    </div>
+
+                    {% if survey.responses %}
+                        {% for response in survey.responses|sort(attribute='created_at', reverse=true) %}
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">Response #{{ response.id }}</h5>
+                                        <small class="text-muted">{{ response.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        {% for answer in response.answers %}
+                                            <div class="col-md-6 mb-3">
+                                                <div class="card h-100">
+                                                    <div class="card-body">
+                                                        <h6 class="card-subtitle mb-2 text-muted">{{ answer.question.question_text }}</h6>
+                                                        <p class="card-text">
+                                                            {% if answer.question.question_type == 'checkbox' %}
+                                                                {% set answer_list = answer.answer_text|from_json %}
+                                                                {% for option in answer_list %}
+                                                                    <span class="badge bg-primary me-1">{{ option }}</span>
+                                                                {% endfor %}
+                                                            {% else %}
+                                                                {{ answer.answer_text }}
+                                                            {% endif %}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No responses have been submitted yet.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

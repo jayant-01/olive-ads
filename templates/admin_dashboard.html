@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="welcome-section">
+        <h2><i class="bi bi-shield-check"></i> Admin Dashboard</h2>
+        <p class="mb-0">Welcome back, {{ current_user.username }}! Here's what's happening with your platform.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Total Users</h6>
+                            <h3 class="mb-0">{{ total_users }}</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Active Sessions</h6>
+                            <h3 class="mb-0">0</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-activity"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">System Status</h6>
+                            <h3 class="mb-0">Healthy</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-clipboard-check"></i> Survey Management
+                    </h5>
+                    <div class="list-group mt-3">
+                        <a href="{{ url_for('surveys') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-list-check"></i> View All Surveys
+                        </a>
+                        <a href="{{ url_for('create_survey') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-plus-circle"></i> Create New Survey
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-graph-up"></i> Survey Analytics
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-gear"></i> Quick Actions
+                    </h5>
+                    <div class="list-group mt-3">
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person-plus"></i> Add New User
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-graph-up"></i> View Analytics
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-gear"></i> System Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

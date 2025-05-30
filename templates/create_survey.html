@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Create Survey{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">
+                        <i class="bi bi-magic"></i> Create Survey with AI
+                    </h2>
+                    
+                    <form method="POST" class="needs-validation" novalidate>
+                        <div class="mb-4">
+                            <label for="prompt" class="form-label">Describe your survey</label>
+                            <textarea 
+                                class="form-control" 
+                                id="prompt" 
+                                name="prompt" 
+                                rows="4" 
+                                placeholder="Example: Create a customer satisfaction survey for a restaurant with questions about food quality, service, and ambiance."
+                                required
+                            ></textarea>
+                            <div class="form-text">
+                                Be specific about the type of survey you want to create. The AI will generate appropriate questions based on your description.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h5><i class="bi bi-lightbulb"></i> Tips for better results:</h5>
+                            <ul class="mb-0">
+                                <li>Specify the target audience</li>
+                                <li>Mention the purpose of the survey</li>
+                                <li>Include any specific topics you want to cover</li>
+                                <li>Indicate if you want multiple choice, text, or checkbox questions</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-magic"></i> Generate Survey
+                            </button>
+                            <a href="{{ url_for('surveys') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Back to Surveys
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %} 

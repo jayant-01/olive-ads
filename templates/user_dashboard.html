@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}User Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="welcome-section">
+        <h2><i class="bi bi-person-circle"></i> Welcome, {{ current_user.username }}!</h2>
+        <p class="mb-0">Here's your personal dashboard. Manage your account and view your activities.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Account Status</h6>
+                            <h3 class="mb-0">Active</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card success">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Last Login</h6>
+                            <h3 class="mb-0">Now</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card warning">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-muted mb-2">Notifications</h6>
+                            <h3 class="mb-0">0</h3>
+                        </div>
+                        <div class="stat-icon">
+                            <i class="bi bi-bell"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-clipboard-check"></i> My Surveys
+                    </h5>
+                    <div class="list-group mt-3">
+                        <a href="{{ url_for('surveys') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-list-check"></i> View All Surveys
+                        </a>
+                        <a href="{{ url_for('create_survey') }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-plus-circle"></i> Create New Survey
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="bi bi-gear"></i> Account Settings
+                    </h5>
+                    <div class="list-group mt-3">
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-person"></i> Edit Profile
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-key"></i> Change Password
+                        </a>
+                        <a href="#" class="list-group-item list-group-item-action">
+                            <i class="bi bi-bell"></i> Notification Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

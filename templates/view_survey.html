@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}{{ survey.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="card-title mb-0">{{ survey.title }}</h2>
+                        <div>
+                            <a href="{{ url_for('postback_configs', survey_id=survey.id) }}" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-exchange-alt"></i> Postbacks
+                            </a>
+                            <a href="{{ url_for('view_responses', survey_id=survey.id) }}" class="btn btn-outline-success">
+                                <i class="fas fa-chart-bar"></i> Responses
+                            </a>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-4">{{ survey.description }}</p>
+
+                    <form method="POST" action="{{ url_for('submit_survey', survey_id=survey.id) }}" class="needs-validation" novalidate>
+                        {% for question in survey.questions|sort(attribute='order') %}
+                        <div class="mb-4">
+                            <label class="form-label">
+                                {{ question.question_text }}
+                                {% if question.is_required %}
+                                <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+
+                            {% if question.question_type == 'text' %}
+                            <input type="text" 
+                                   class="form-control" 
+                                   name="question_{{ question.id }}"
+                                   {% if question.is_required %}required{% endif %}
+                                   placeholder="Your answer">
+
+                            {% elif question.question_type == 'multiple_choice' %}
+                            <div class="list-group">
+                                {% for option in question.options_list %}
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" 
+                                           type="radio" 
+                                           name="question_{{ question.id }}" 
+                                           value="{{ option }}"
+                                           {% if question.is_required %}required{% endif %}>
+                                    {{ option }}
+                                </label>
+                                {% endfor %}
+                            </div>
+
+                            {% elif question.question_type == 'checkbox' %}
+                            <div class="list-group">
+                                {% for option in question.options_list %}
+                                <label class="list-group-item">
+                                    <input class="form-check-input me-1" 
+                                           type="checkbox" 
+                                           name="question_{{ question.id }}[]" 
+                                           value="{{ option }}">
+                                    {{ option }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                            {% if question.is_required %}
+                            <div class="invalid-feedback">
+                                Please select at least one option.
+                            </div>
+                            {% endif %}
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-paper-plane"></i> Submit Survey
+                            </button>
+                            <a href="{{ url_for('surveys') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Surveys
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            
+            // Additional validation for required checkboxes
+            form.querySelectorAll('input[type="checkbox"][required]').forEach(function(checkbox) {
+                var checkboxGroup = form.querySelectorAll(`input[name="${checkbox.name}"]`);
+                var checked = Array.from(checkboxGroup).some(cb => cb.checked);
+                if (!checked) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    checkbox.closest('.list-group').classList.add('is-invalid');
+                } else {
+                    checkbox.closest('.list-group').classList.remove('is-invalid');
+                }
+            });
+            
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %} 
