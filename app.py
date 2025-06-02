@@ -14,7 +14,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///oliver_ads.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
-#
 db.init_app(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager()
@@ -375,6 +374,7 @@ def postback_logs(config_id):
 @app.route('/send_to_oliver_ads', methods=['POST'])
 #
 def send_to_oliver_ads():
+    print("hi")
     try:
         payload = request.get_json()
         response = requests.post('http://127.0.0.1:5000/oliver_ads', json=payload)

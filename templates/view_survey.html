@@ -118,6 +118,83 @@
 //     })
 // })()
 
+// (function () {
+//     'use strict'
+
+//     var forms = document.querySelectorAll('.needs-validation');
+    
+//     Array.prototype.slice.call(forms).forEach(function (form) {
+//         form.addEventListener('submit', async function (event) {
+//             console.log("hereeeeeeeeee");  // ✅ this will now print
+
+//             if (!form.checkValidity()) {
+//                 event.preventDefault();
+//                 event.stopPropagation();
+//             }
+
+//             // Additional validation for required checkboxes
+//             form.querySelectorAll('input[type="checkbox"][required]').forEach(function (checkbox) {
+//                 var checkboxGroup = form.querySelectorAll(`input[name="${checkbox.name}"]`);
+//                 var checked = Array.from(checkboxGroup).some(cb => cb.checked);
+//                 if (!checked) {
+//                     event.preventDefault();
+//                     event.stopPropagation();
+//                     checkbox.closest('.list-group').classList.add('is-invalid');
+//                 } else {
+//                     checkbox.closest('.list-group').classList.remove('is-invalid');
+//                 }
+//             });
+
+//             form.classList.add('was-validated');
+
+//             if (!form.checkValidity()) {
+//                 return;
+//             }
+
+//             // ✅ Build and send JSON data
+//             const formData = new FormData(form);
+//             // ✅ Extract formClone_RespondeId from URL query parameter
+//             const urlParams = new URLSearchParams(window.location.search);
+//             const formCloneRespondeId = urlParams.get('formClone_RespondeId');
+
+//             const jsonData = {
+//                 formClone_RespondeId: formCloneRespondeId
+//             };
+//             formData.forEach((value, key) => {
+//                 if (jsonData[key]) {
+//                     if (Array.isArray(jsonData[key])) {
+//                         jsonData[key].push(value);
+//                     } else {
+//                         jsonData[key] = [jsonData[key], value];
+//                     }
+//                 } else {
+//                     jsonData[key] = value;
+//                 }
+//             });
+
+//             try {
+//                 const response = await fetch("/send_to_oliver_ads", {
+//                     method: "POST",
+//                     headers: {
+//                         "Content-Type": "application/json"
+//                     },
+//                     body: JSON.stringify(jsonData)
+//                 });
+
+//                 if (!response.ok) {
+//                     throw new Error("Failed to send to oliver_ads via proxy: " + response.status);
+//                 }
+
+//                 const result = await response.json();
+//                 console.log("Success sending to oliver_ads:", result);
+//             } catch (err) {
+//                 console.error("Proxy request to oliver_ads failed:", err);
+//             }
+
+//         }, false);
+//     });
+// })();
+
 (function () {
     'use strict'
 
@@ -125,14 +202,14 @@
     
     Array.prototype.slice.call(forms).forEach(function (form) {
         form.addEventListener('submit', async function (event) {
-            console.log("hereeeeeeeeee");  // ✅ this will now print
+            console.log("Form submit initiated");
 
             if (!form.checkValidity()) {
                 event.preventDefault();
                 event.stopPropagation();
             }
 
-            // Additional validation for required checkboxes
+            // Validate required checkboxes
             form.querySelectorAll('input[type="checkbox"][required]').forEach(function (checkbox) {
                 var checkboxGroup = form.querySelectorAll(`input[name="${checkbox.name}"]`);
                 var checked = Array.from(checkboxGroup).some(cb => cb.checked);
@@ -151,15 +228,16 @@
                 return;
             }
 
-            // ✅ Build and send JSON data
+            // ✅ Build JSON from FormData
             const formData = new FormData(form);
-            // ✅ Extract formClone_RespondeId from URL query parameter
             const urlParams = new URLSearchParams(window.location.search);
             const formCloneRespondeId = urlParams.get('formClone_RespondeId');
 
-            const jsonData = {
-                formClone_RespondeId: formCloneRespondeId
-            };
+            const jsonData = {};
+            if (formCloneRespondeId) {
+                jsonData["formClone_RespondeId"] = formCloneRespondeId;
+            }
+
             formData.forEach((value, key) => {
                 if (jsonData[key]) {
                     if (Array.isArray(jsonData[key])) {
@@ -172,28 +250,34 @@
                 }
             });
 
-            try {
-                const response = await fetch("/send_to_oliver_ads", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify(jsonData)
-                });
+            // ✅ Only send to /send_to_oliver_ads if query param exists
+            if (formCloneRespondeId) {
+                try {
+                    const response = await fetch("/send_to_oliver_ads", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(jsonData)
+                    });
 
-                if (!response.ok) {
-                    throw new Error("Failed to send to oliver_ads via proxy: " + response.status);
+                    if (!response.ok) {
+                        throw new Error("Failed to send to oliver_ads via proxy: " + response.status);
+                    }
+
+                    const result = await response.json();
+                    console.log("Success sending to oliver_ads:", result);
+                } catch (err) {
+                    console.error("Proxy request to oliver_ads failed:", err);
                 }
-
-                const result = await response.json();
-                console.log("Success sending to oliver_ads:", result);
-            } catch (err) {
-                console.error("Proxy request to oliver_ads failed:", err);
+            } else {
+                console.log("No formClone_RespondeId provided. Skipping proxy request.");
             }
 
         }, false);
     });
 })();
+
 
 
 // // Send formClone_RespondeId on form submission
