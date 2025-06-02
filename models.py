@@ -65,7 +65,7 @@ class Question(db.Model):
 class SurveyResponse(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     survey_id = db.Column(db.Integer, db.ForeignKey('survey.id'), nullable=False)
-    respondent_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    respondent_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     respondent = db.relationship('User', backref=db.backref('responses', lazy=True))

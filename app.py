@@ -6,6 +6,7 @@ from postback_service import PostbackService
 from flask_migrate import Migrate
 import os
 import json
+import requests
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'  # Change this to a secure secret key
@@ -13,6 +14,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///oliver_ads.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize extensions
+#
 db.init_app(app)
 migrate = Migrate(app, db)
 login_manager = LoginManager()
@@ -109,8 +111,10 @@ def logout():
 
 # Survey-related routes
 @app.route('/surveys')
-@login_required
+# @login_required
 def surveys():
+    if not current_user.is_authenticated:
+        return render_template('surveys.html', surveys=[])
     user_surveys = Survey.query.filter_by(creator_id=current_user.id).all()
     return render_template('surveys.html', surveys=user_surveys)
 
@@ -164,51 +168,107 @@ def create_survey():
     
     return render_template('create_survey.html')
 
+# @app.route('/surveys/<int:survey_id>')
+# @login_required
+# def view_survey(survey_id):
+#     survey = Survey.query.get_or_404(survey_id)
+#     if survey.creator_id != current_user.id and not current_user.is_admin:
+#         flash('You do not have permission to view this survey')
+#         return redirect(url_for('surveys'))
+#     return render_template('view_survey.html', survey=survey)
 @app.route('/surveys/<int:survey_id>')
-@login_required
 def view_survey(survey_id):
     survey = Survey.query.get_or_404(survey_id)
-    if survey.creator_id != current_user.id and not current_user.is_admin:
-        flash('You do not have permission to view this survey')
-        return redirect(url_for('surveys'))
+    # Only restrict access if user is logged in and not admin/owner
+    if current_user.is_authenticated:
+        if survey.creator_id != current_user.id and not current_user.is_admin:
+            flash('You do not have permission to view this survey')
+            return redirect(url_for('surveys'))
+
     return render_template('view_survey.html', survey=survey)
 
+
+# @app.route('/surveys/<int:survey_id>/submit', methods=['POST'])
+# @login_required
+# def submit_survey(survey_id):
+#     survey = Survey.query.get_or_404(survey_id)
+    
+#     # Create a new response
+#     response = SurveyResponse(
+#         survey_id=survey_id,
+#         respondent_id=current_user.id
+#     )
+#     db.session.add(response)
+    
+#     # Process each question
+#     for question in survey.questions:
+#         answer_value = request.form.get(f'question_{question.id}')
+#         if answer_value:
+#             # Handle checkbox questions (multiple values)
+#             if question.question_type == 'checkbox':
+#                 answer_value = request.form.getlist(f'question_{question.id}[]')
+#                 answer_value = json.dumps(answer_value)
+            
+#             answer = Answer(
+#                 response_id=response.id,
+#                 question_id=question.id,
+#                 answer_text=answer_value
+#             )
+#             db.session.add(answer)
+    
+#     try:
+#         db.session.commit()
+        
+#         # Process postbacks
+#         PostbackService.process_survey_response(response)
+        
+#         flash('Survey submitted successfully!', 'success')
+#         return redirect(url_for('surveys'))
+#     except Exception as e:
+#         db.session.rollback()
+#         flash(f'Error submitting survey: {str(e)}', 'error')
+#         return redirect(url_for('view_survey', survey_id=survey_id))
 @app.route('/surveys/<int:survey_id>/submit', methods=['POST'])
-@login_required
 def submit_survey(survey_id):
     survey = Survey.query.get_or_404(survey_id)
-    
-    # Create a new response
+
+    # Create a new response — set respondent_id only if user is logged in
     response = SurveyResponse(
         survey_id=survey_id,
-        respondent_id=current_user.id
+        respondent_id=current_user.id if current_user.is_authenticated else None
     )
     db.session.add(response)
-    
+    db.session.flush()  # Ensure response.id is populated
+
     # Process each question
     for question in survey.questions:
-        answer_value = request.form.get(f'question_{question.id}')
-        if answer_value:
-            # Handle checkbox questions (multiple values)
-            if question.question_type == 'checkbox':
-                answer_value = request.form.getlist(f'question_{question.id}[]')
-                answer_value = json.dumps(answer_value)
-            
-            answer = Answer(
-                response_id=response.id,
-                question_id=question.id,
-                answer_text=answer_value
-            )
-            db.session.add(answer)
-    
+        if question.question_type == 'checkbox':
+            answer_values = request.form.getlist(f'question_{question.id}[]')
+            if answer_values:
+                answer = Answer(
+                    response_id=response.id,
+                    question_id=question.id,
+                    answer_text=json.dumps(answer_values)
+                )
+                db.session.add(answer)
+        else:
+            answer_value = request.form.get(f'question_{question.id}')
+            if answer_value:
+                answer = Answer(
+                    response_id=response.id,
+                    question_id=question.id,
+                    answer_text=answer_value
+                )
+                db.session.add(answer)
+
     try:
         db.session.commit()
-        
+
         # Process postbacks
         PostbackService.process_survey_response(response)
-        
+
         flash('Survey submitted successfully!', 'success')
-        return redirect(url_for('surveys'))
+        return redirect(url_for('surveys'))  # You can change this to a thank-you page
     except Exception as e:
         db.session.rollback()
         flash(f'Error submitting survey: {str(e)}', 'error')
@@ -312,6 +372,14 @@ def postback_logs(config_id):
     
     logs = PostbackLog.query.filter_by(config_id=config_id).order_by(PostbackLog.sent_at.desc()).all()
     return render_template('postback_logs.html', config=config, logs=logs)
-
+@app.route('/send_to_oliver_ads', methods=['POST'])
+#
+def send_to_oliver_ads():
+    try:
+        payload = request.get_json()
+        response = requests.post('http://127.0.0.1:5000/oliver_ads', json=payload)
+        return jsonify(response.json()), response.status_code
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 if __name__ == '__main__':
     app.run(debug=True) 
