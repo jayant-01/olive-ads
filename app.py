@@ -381,5 +381,13 @@ def send_to_oliver_ads():
         return jsonify(response.json()), response.status_code
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+    
+# Register the custom filter
+@app.template_filter('from_json')
+def from_json_filter(s):
+    try:
+        return json.loads(s)
+    except (TypeError, json.JSONDecodeError):
+        return []
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
