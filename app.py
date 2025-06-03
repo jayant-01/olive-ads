@@ -377,9 +377,9 @@ def send_to_oliver_ads():
     print("hi")
     try:
         payload = request.get_json()
-        response = requests.post('http://127.0.0.1:5000/oliver_ads', json=payload)
+        response = requests.post('http://46.202.167.167:5000/oliver_ads', json=payload)
         return jsonify(response.json()), response.status_code
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000) 
+    app.run(host='0.0.0.0', port=5000)
