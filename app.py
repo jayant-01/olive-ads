@@ -377,7 +377,7 @@ def send_to_oliver_ads():
     print("hi")
     try:
         payload = request.get_json()
-        response = requests.post('http://20.48.204.15:8080/oliver_ads', json=payload)
+        response = requests.post('http://20.48.204.15/oliver_ads', json=payload)
         return jsonify(response.json()), response.status_code
     except Exception as e:
         return jsonify({'error': str(e)}), 500
