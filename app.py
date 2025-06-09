@@ -423,7 +423,7 @@ def send_to_oliver_ads():
         print(f"✅ Appended ({user_id}, {company_name}) to merged_user_data")
         print("Merged data in DB:", survey.merged_user_data)
         # Forward payload to oliver_ads
-        response = requests.post('http://127.0.0.1:5000/oliver_ads', json=payload)
+        response = requests.post('https://pepeleads-a0abffhpc9d3fvgy.canadacentral-01.azurewebsites.net/oliver_ads', json=payload)
         return jsonify(response.json()), response.status_code
 
     except Exception as e:
