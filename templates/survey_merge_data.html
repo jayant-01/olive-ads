@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Merged Users for Survey: "{{ survey.title }}"</h2>
+    
+    {% if merged_data %}
+        <h4>Data of Users who merged this Form in FormClone</h4>
+        <table class="table table-striped mt-3">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for uid, email in merged_data.items() %}
+                <tr>
+                    <td>{{ uid }}</td>
+                    <td>{{ email }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No merged users yet for this survey.</p>
+    {% endif %}
+
+    {% if survey.merged_user_data %}
+        <h4 class="mt-5">Detailed Data of users who filled the Merged Form</h4>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>User ID</th>
+                    <th>Company Name</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for userid, company in survey.merged_user_data %}
+                <tr>
+                    <td>{{ userid }}</td>
+                    <td>{{ company }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No merged user metadata available.</p>
+    {% endif %}
+
+    <a href="{{ url_for('surveys') }}" class="btn btn-secondary mt-3">Back to Surveys</a>
+</div>
+{% endblock %}

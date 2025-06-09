@@ -7,7 +7,8 @@ from flask_migrate import Migrate
 import os
 import json
 import requests
-
+from urllib.parse import urlparse, parse_qs
+import re
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'  # Change this to a secure secret key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///oliver_ads.db'
@@ -371,17 +372,113 @@ def postback_logs(config_id):
     
     logs = PostbackLog.query.filter_by(config_id=config_id).order_by(PostbackLog.sent_at.desc()).all()
     return render_template('postback_logs.html', config=config, logs=logs)
-@app.route('/send_to_oliver_ads', methods=['POST'])
+# @app.route('/send_to_oliver_ads', methods=['POST'])
 #
+# def send_to_oliver_ads():
+#     print("hi") 
+#     try:
+#         payload = request.get_json()
+#         response = requests.post('http://127.0.0.1:5000/oliver_ads', json=payload)
+#         return jsonify(response.json()), response.status_code
+#     except Exception as e:
+#         return jsonify({'error': str(e)}), 500
+@app.route('/send_to_oliver_ads', methods=['POST'])
 def send_to_oliver_ads():
-    print("hi")
     try:
         payload = request.get_json()
-        response = requests.post('http://20.48.204.15/oliver_ads', json=payload)
+        print("📩 Payload received at /send_to_oliver_ads:", payload)
+
+        referer_url = request.referrer or ""
+        print(f"🌐 Referrer: {referer_url}")
+
+        # Extract survey_id from path using regex
+        survey_match = re.search(r'/surveys/(\d+)', referer_url)
+        if not survey_match:
+            return jsonify({'error': 'Survey ID not found in referrer URL'}), 400
+
+        survey_id = int(survey_match.group(1))
+        parsed_url = urlparse(referer_url)
+        query_params = parse_qs(parsed_url.query)
+
+        form_clone_response_id = payload.get("formClone_RespondeId")
+        user_id = query_params.get("userid", [None])[0]
+        company_name = query_params.get("companyname", [None])[0]
+
+        print("🔍 Extracted Params:")
+        print(f"  survey_id: {survey_id}")
+        print(f"  user_id: {user_id}")
+        print(f"  company_name: {company_name}")
+        print(f"  formClone_RespondeId: {form_clone_response_id}")
+
+        survey = Survey.query.get(survey_id)
+        if not survey:
+            return jsonify({'error': 'Survey not found'}), 404
+
+        # Store (user_id, company_name) in merged_user_data list
+        if survey.merged_user_data is None:
+            survey.merged_user_data = []
+
+        survey.merged_user_data.append((user_id, company_name))
+        db.session.commit()
+        print(f"✅ Appended ({user_id}, {company_name}) to merged_user_data")
+        print("Merged data in DB:", survey.merged_user_data)
+        # Forward payload to oliver_ads
+        response = requests.post('http://127.0.0.1:5000/oliver_ads', json=payload)
         return jsonify(response.json()), response.status_code
+
     except Exception as e:
+        print("❌ Error in /send_to_oliver_ads:", e)
         return jsonify({'error': str(e)}), 500
-    
+
+
+@app.route('/surveys/<int:survey_id>/merge_data')
+@login_required
+def view_merged_users(survey_id):
+    survey = Survey.query.get_or_404(survey_id)
+
+    # Permission check
+    if survey.creator_id != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to view this data.', 'danger')
+        return redirect(url_for('surveys'))
+
+    # who_merged is a dictionary of {user_id: email}
+    merged_data = survey.who_merged or {}
+
+    return render_template('survey_merge_data.html', survey=survey, merged_data=merged_data)
+
+@app.route('/save_merge_data', methods=['POST'])
+def save_merge_data():
+    try:
+        data = request.get_json()
+        oliver_form_id = data.get('oliver_form_id')
+        email = data.get('email')
+        user_id = str(data.get('username'))  # Cast to str for JSON key safety
+
+        print("🔁 Received Merge Data:")
+        print(f"👤 Email: {email}")
+        print(f"📝 Oliver Form ID: {oliver_form_id}")
+        print(f"🧑 ID: {user_id}")
+
+        # Fetch the survey
+        survey = Survey.query.get(oliver_form_id)
+        if not survey:
+            return jsonify({"status": "error", "message": "Survey not found"}), 404
+
+        # Initialize who_merged if None
+        if survey.who_merged is None:
+            survey.who_merged = {}
+
+        # Add or update the user's info
+        survey.who_merged[user_id] = email
+
+        # Save changes
+        db.session.commit()
+
+        return jsonify({"status": "success", "message": "Data saved to survey.who_merged"}), 200
+
+    except Exception as e:
+        print("❌ Error processing merge data:", e)
+        return jsonify({"status": "error", "message": str(e)}), 400
 # Register the custom filter
 @app.template_filter('from_json')
 def from_json_filter(s):

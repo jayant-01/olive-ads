@@ -3,7 +3,9 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import json
-
+from sqlalchemy.types import JSON
+from sqlalchemy.ext.mutable import MutableDict
+from sqlalchemy.ext.mutable import MutableList
 db = SQLAlchemy()
 
 class User(UserMixin, db.Model):
@@ -34,7 +36,9 @@ class Survey(db.Model):
     questions = db.relationship('Question', backref='survey', lazy=True, cascade='all, delete-orphan')
     responses = db.relationship('SurveyResponse', backref='survey', lazy=True, cascade='all, delete-orphan')
     postback_configs = db.relationship('PostbackConfig', backref='survey', lazy=True, cascade='all, delete-orphan')
-
+    who_merged = db.Column(MutableDict.as_mutable(JSON), default=dict)
+    # merged_user_data = db.Column(MutableDict.as_mutable(JSON), default=dict)
+    merged_user_data = db.Column(MutableList.as_mutable(JSON), default=list)
     def __repr__(self):
         return f'<Survey {self.title}>'
 
