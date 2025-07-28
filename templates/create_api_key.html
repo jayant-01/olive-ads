@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}Create API Key{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title mb-4">
+                        <i class="fas fa-key"></i> Create New API Key
+                    </h2>
+                    
+                    <form method="POST" class="needs-validation" novalidate>
+                        <div class="mb-4">
+                            <label for="name" class="form-label">API Key Name</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                id="name" 
+                                name="name" 
+                                placeholder="e.g., My Website Integration"
+                                required
+                            >
+                            <div class="form-text">
+                                Give your API key a descriptive name to help you identify its purpose later.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <h5><i class="fas fa-exclamation-triangle"></i> Important Security Notice</h5>
+                            <ul class="mb-0">
+                                <li>API keys provide access to your form data</li>
+                                <li>Store your API key securely - you won't see it again after creation</li>
+                                <li>You can deactivate or delete keys at any time</li>
+                                <li>Each key has read-only access to form information</li>
+                            </ul>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> What This API Key Can Access</h5>
+                            <ul class="mb-0">
+                                <li><strong>Read Forms:</strong> Get list of all forms and their basic information</li>
+                                <li><strong>Form Details:</strong> Get detailed information about specific forms</li>
+                                <li><strong>Statistics:</strong> Get overall statistics about your forms</li>
+                                <li><strong>No Write Access:</strong> Cannot create, modify, or delete forms</li>
+                                <li><strong>No Response Data:</strong> Cannot access individual survey responses</li>
+                            </ul>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-key"></i> Generate API Key
+                            </button>
+                            <a href="{{ url_for('admin_api_keys') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to API Keys
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Form validation
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock %} 

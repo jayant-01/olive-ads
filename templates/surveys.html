@@ -17,23 +17,51 @@
         <div class="col-md-6 mb-4">
             <div class="card h-100">
                 <div class="card-body">
-                    <h5 class="card-title">{{ survey.title }}</h5>
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title mb-0">{{ survey.title }}</h5>
+                        {% if survey.is_external %}
+                            <span class="badge bg-info">
+                                <i class="fas fa-external-link-alt"></i> External
+                            </span>
+                        {% else %}
+                            <span class="badge bg-primary">
+                                <i class="fas fa-magic"></i> AI Generated
+                            </span>
+                        {% endif %}
+                    </div>
                     <p class="card-text text-muted">{{ survey.description }}</p>
+                    
+                    {% if survey.is_external %}
+                        <div class="mb-3">
+                            <small class="text-muted">
+                                <i class="fas fa-link"></i> External URL:
+                            </small>
+                            <div class="text-break">
+                                <a href="{{ survey.external_url }}" target="_blank" class="text-decoration-none">
+                                    {{ survey.external_url|truncate(50) }}
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
                     <div class="d-flex justify-content-between align-items-center">
                         <small class="text-muted">
                             Created: {{ survey.created_at.strftime('%Y-%m-%d') }}
                         </small>
                         <div>
                             <a href="{{ url_for('view_survey', survey_id=survey.id) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-eye"></i> View
+                                {% if survey.is_external %}
+                                    <i class="fas fa-external-link-alt"></i> Open
+                                {% else %}
+                                    <i class="bi bi-eye"></i> View
+                                {% endif %}
                             </a>
                             <a href="{{ url_for('view_responses', survey_id=survey.id) }}" class="btn btn-sm btn-outline-success">
                                 <i class="bi bi-bar-chart"></i> Responses
                             </a>
-                           <a href="{{ url_for('view_merged_users', survey_id=survey.id) }}" class="btn btn-sm btn-outline-success">
-                                <i class="bi bi-bar-chart"></i> Merge Data
-                           </a>
-
+                            <a href="{{ url_for('view_merged_users', survey_id=survey.id) }}" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-people"></i> Merge Data
+                            </a>
                         </div>
                     </div>
                 </div>

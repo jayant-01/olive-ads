@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}API Key Tester{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-key"></i> API Key Tester</h2>
+    <p class="text-muted">Enter your API key and the base URL of the website you want to fetch forms from.</p>
+
+    <!-- Tabs -->
+    <ul class="nav nav-tabs mb-3" id="apiTesterTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="friendly-tab" data-bs-toggle="tab" data-bs-target="#friendly" type="button" role="tab" aria-controls="friendly" aria-selected="true">Friendly Table</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="raw-tab" data-bs-toggle="tab" data-bs-target="#raw" type="button" role="tab" aria-controls="raw" aria-selected="false">Raw JSON</button>
+        </li>
+    </ul>
+
+    <!-- Shared Form -->
+    <form id="api-key-form" class="mb-4">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label for="api_key" class="form-label">API Key</label>
+                <input type="text" class="form-control" id="api_key" name="api_key" placeholder="Paste your API key here" required>
+            </div>
+            <div class="col-md-5">
+                <label for="base_url" class="form-label">Base URL</label>
+                <input type="url" class="form-control" id="base_url" name="base_url" placeholder="https://other-website.com" value="{{ request.host_url[:-1] }}" required>
+                <div class="form-text">Enter the root URL of the other website (e.g., https://other-website.com)</div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-download"></i> Fetch Forms
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <div class="tab-content" id="apiTesterTabsContent">
+        <!-- Friendly Table Tab -->
+        <div class="tab-pane fade show active" id="friendly" role="tabpanel" aria-labelledby="friendly-tab">
+            <div id="api-results"></div>
+        </div>
+        <!-- Raw JSON Tab -->
+        <div class="tab-pane fade" id="raw" role="tabpanel" aria-labelledby="raw-tab">
+            <pre id="api-raw-result" style="background:#f8f9fa; padding:1em;"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store last used values for both tabs
+let lastApiKey = '';
+let lastBaseUrl = '';
+
+// Handle form submit for both tabs
+const form = document.getElementById('api-key-form');
+form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const apiKey = document.getElementById('api_key').value.trim();
+    let baseUrl = document.getElementById('base_url').value.trim();
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+    lastApiKey = apiKey;
+    lastBaseUrl = baseUrl;
+
+    // Which tab is active?
+    const activeTab = document.querySelector('.nav-link.active').id;
+    if (activeTab === 'friendly-tab') {
+        fetchFriendly(apiKey, baseUrl);
+    } else {
+        fetchRaw(apiKey, baseUrl);
+    }
+});
+
+// Tab switching: auto-fetch if values are present
+const friendlyTab = document.getElementById('friendly-tab');
+const rawTab = document.getElementById('raw-tab');
+friendlyTab.addEventListener('shown.bs.tab', function () {
+    if (lastApiKey && lastBaseUrl) fetchFriendly(lastApiKey, lastBaseUrl);
+});
+rawTab.addEventListener('shown.bs.tab', function () {
+    if (lastApiKey && lastBaseUrl) fetchRaw(lastApiKey, lastBaseUrl);
+});
+
+// Friendly Table Fetch
+async function fetchFriendly(apiKey, baseUrl) {
+    const resultsDiv = document.getElementById('api-results');
+    resultsDiv.innerHTML = '<div class="alert alert-info">Fetching forms...</div>';
+    try {
+        const response = await fetch(baseUrl + '/api/forms', {
+            headers: { 'X-API-Key': apiKey }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            resultsDiv.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to fetch forms.'}</div>`;
+            return;
+        }
+        if (!data.data || !data.data.forms || data.data.forms.length === 0) {
+            resultsDiv.innerHTML = '<div class="alert alert-warning">No forms found for this API key.</div>';
+            return;
+        }
+        // Render forms
+        let html = `<div class="card mt-3"><div class="card-header"><strong>Forms (${data.data.total_forms})</strong></div><div class="card-body p-0"><table class="table table-striped mb-0"><thead><tr><th>ID</th><th>Title</th><th>Type</th><th>Questions</th><th>Actions</th></tr></thead><tbody>`;
+        for (const form of data.data.forms) {
+            html += `<tr>
+                <td>${form.id}</td>
+                <td>${form.title}</td>
+                <td>${form.form_type === 'external' ? '<span class=\'badge bg-info\'>External</span>' : '<span class=\'badge bg-primary\'>AI Generated</span>'}</td>
+                <td>${form.total_questions}</td>
+                <td><button class="btn btn-sm btn-outline-info" onclick="fetchFormDetails('${baseUrl}', ${form.id}, '${apiKey}')">Details</button></td>
+            </tr>`;
+        }
+        html += '</tbody></table></div></div>';
+        html += '<div id="form-details"></div>';
+        resultsDiv.innerHTML = html;
+    } catch (err) {
+        resultsDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+    }
+}
+
+// Friendly Table: Fetch Form Details
+async function fetchFormDetails(baseUrl, formId, apiKey) {
+    const detailsDiv = document.getElementById('form-details');
+    detailsDiv.innerHTML = '<div class="alert alert-info">Fetching form details...</div>';
+    try {
+        const response = await fetch(baseUrl + `/api/forms/${formId}`, {
+            headers: { 'X-API-Key': apiKey }
+        });
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            detailsDiv.innerHTML = `<div class="alert alert-danger">${data.error || 'Failed to fetch form details.'}</div>`;
+            return;
+        }
+        const form = data.data;
+        let html = `<div class=\'card mt-3\'><div class=\'card-header\'><strong>Form Details: ${form.title}</strong></div><div class=\'card-body\'>`;
+        html += `<p><strong>ID:</strong> ${form.id}</p>`;
+        html += `<p><strong>Description:</strong> ${form.description || 'N/A'}</p>`;
+        html += `<p><strong>Type:</strong> ${form.form_type === 'external' ? 'External' : 'AI Generated'}</p>`;
+        if (form.is_external && form.external_url) {
+            html += `<p><strong>External URL:</strong> <a href=\'${form.external_url}\' target=\'_blank\'>${form.external_url}</a></p>`;
+        }
+        html += `<p><strong>Created At:</strong> ${form.created_at}</p>`;
+        html += `<p><strong>Status:</strong> ${form.is_active ? '<span class=\'badge bg-success\'>Active</span>' : '<span class=\'badge bg-secondary\'>Inactive</span>'}</p>`;
+        if (form.questions && form.questions.length > 0) {
+            html += '<h6>Questions:</h6><ol>';
+            for (const q of form.questions) {
+                html += `<li><strong>${q.text}</strong> <span class=\'badge bg-light text-dark\'>${q.type}</span>${q.is_required ? ' <span class=\'text-danger\'>(required)</span>' : ''}`;
+                if (q.options) {
+                    html += `<br><small>Options: ${q.options.join(', ')}</small>`;
+                }
+                html += '</li>';
+            }
+            html += '</ol>';
+        }
+        html += '</div></div>';
+        detailsDiv.innerHTML = html;
+    } catch (err) {
+        detailsDiv.innerHTML = `<div class="alert alert-danger">Error: ${err.message}</div>`;
+    }
+}
+window.fetchFormDetails = fetchFormDetails;
+
+// Raw JSON Fetch
+async function fetchRaw(apiKey, baseUrl) {
+    const rawDiv = document.getElementById('api-raw-result');
+    rawDiv.textContent = 'Loading...';
+    try {
+        const response = await fetch(baseUrl + '/api/forms', {
+            headers: { 'X-API-Key': apiKey }
+        });
+        const text = await response.text();
+        let status = response.status;
+        let json;
+        try {
+            json = JSON.parse(text);
+        } catch {
+            json = text;
+        }
+        rawDiv.textContent = 'Status: ' + status + '\n' + (typeof json === 'string' ? json : JSON.stringify(json, null, 2));
+    } catch (err) {
+        rawDiv.textContent = 'Error: ' + err;
+    }
+}
+</script>
+{% endblock %} 

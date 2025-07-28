@@ -9,44 +9,134 @@
             <div class="card">
                 <div class="card-body">
                     <h2 class="card-title mb-4">
-                        <i class="bi bi-magic"></i> Create Survey with AI
+                        <i class="bi bi-plus-circle"></i> Create New Survey
                     </h2>
                     
-                    <form method="POST" class="needs-validation" novalidate>
-                        <div class="mb-4">
-                            <label for="prompt" class="form-label">Describe your survey</label>
-                            <textarea 
-                                class="form-control" 
-                                id="prompt" 
-                                name="prompt" 
-                                rows="4" 
-                                placeholder="Example: Create a customer satisfaction survey for a restaurant with questions about food quality, service, and ambiance."
-                                required
-                            ></textarea>
-                            <div class="form-text">
-                                Be specific about the type of survey you want to create. The AI will generate appropriate questions based on your description.
-                            </div>
-                        </div>
-
-                        <div class="alert alert-info">
-                            <h5><i class="bi bi-lightbulb"></i> Tips for better results:</h5>
-                            <ul class="mb-0">
-                                <li>Specify the target audience</li>
-                                <li>Mention the purpose of the survey</li>
-                                <li>Include any specific topics you want to cover</li>
-                                <li>Indicate if you want multiple choice, text, or checkbox questions</li>
-                            </ul>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="bi bi-magic"></i> Generate Survey
+                    <!-- Tab Navigation -->
+                    <ul class="nav nav-tabs mb-4" id="surveyTypeTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="ai-tab" data-bs-toggle="tab" data-bs-target="#ai-form" type="button" role="tab" aria-controls="ai-form" aria-selected="true">
+                                <i class="bi bi-magic"></i> AI Generated
                             </button>
-                            <a href="{{ url_for('surveys') }}" class="btn btn-outline-secondary">
-                                <i class="bi bi-arrow-left"></i> Back to Surveys
-                            </a>
+                        </li>
+                        {% if current_user.is_admin %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="external-tab" data-bs-toggle="tab" data-bs-target="#external-form" type="button" role="tab" aria-controls="external-form" aria-selected="false">
+                                <i class="bi bi-link-45deg"></i> External Form
+                            </button>
+                        </li>
+                        {% endif %}
+                    </ul>
+                    
+                    <!-- Tab Content -->
+                    <div class="tab-content" id="surveyTypeTabContent">
+                        <!-- AI Generated Form Tab -->
+                        <div class="tab-pane fade show active" id="ai-form" role="tabpanel" aria-labelledby="ai-tab">
+                            <form method="POST" action="{{ url_for('create_survey') }}" class="needs-validation" novalidate>
+                                <input type="hidden" name="form_type" value="ai_generated">
+                                
+                                <div class="mb-4">
+                                    <label for="prompt" class="form-label">Describe your survey</label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="prompt" 
+                                        name="prompt" 
+                                        rows="4" 
+                                        placeholder="Example: Create a customer satisfaction survey for a restaurant with questions about food quality, service, and ambiance."
+                                        required
+                                    ></textarea>
+                                    <div class="form-text">
+                                        Be specific about the type of survey you want to create. The AI will generate appropriate questions based on your description.
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-info">
+                                    <h5><i class="bi bi-lightbulb"></i> Tips for better results:</h5>
+                                    <ul class="mb-0">
+                                        <li>Specify the target audience</li>
+                                        <li>Mention the purpose of the survey</li>
+                                        <li>Include any specific topics you want to cover</li>
+                                        <li>Indicate if you want multiple choice, text, or checkbox questions</li>
+                                    </ul>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-magic"></i> Generate Survey
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    </form>
+                        
+                        {% if current_user.is_admin %}
+                        <!-- External Form Tab -->
+                        <div class="tab-pane fade" id="external-form" role="tabpanel" aria-labelledby="external-tab">
+                            <form method="POST" action="{{ url_for('create_external_survey') }}" class="needs-validation" novalidate>
+                                <input type="hidden" name="form_type" value="external">
+                                
+                                <div class="mb-4">
+                                    <label for="title" class="form-label">Survey Title</label>
+                                    <input 
+                                        type="text" 
+                                        class="form-control" 
+                                        id="title" 
+                                        name="title" 
+                                        placeholder="Enter a descriptive title for your external form"
+                                        required
+                                    >
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="description" class="form-label">Description (Optional)</label>
+                                    <textarea 
+                                        class="form-control" 
+                                        id="description" 
+                                        name="description" 
+                                        rows="3" 
+                                        placeholder="Brief description of what this form is for..."
+                                    ></textarea>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <label for="external_url" class="form-label">External Form URL</label>
+                                    <input 
+                                        type="url" 
+                                        class="form-control" 
+                                        id="external_url" 
+                                        name="external_url" 
+                                        placeholder="https://example.com/your-form"
+                                        required
+                                    >
+                                    <div class="form-text">
+                                        Enter the complete URL of your external form. This form will be accessible from your dashboard.
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-warning">
+                                    <h5><i class="bi bi-exclamation-triangle"></i> Important Notes:</h5>
+                                    <ul class="mb-0">
+                                        <li>Make sure the external form URL is accessible and working</li>
+                                        <li>The form will open in a new tab when accessed</li>
+                                        <li>You can still configure postbacks for external forms</li>
+                                        <li>Response tracking will work if the external form sends data to your system</li>
+                                    </ul>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-lg">
+                                        <i class="bi bi-link-45deg"></i> Add External Form
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('surveys') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Back to Surveys
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

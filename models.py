@@ -3,6 +3,8 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
 import json
+import secrets
+import string
 from sqlalchemy.types import JSON
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.ext.mutable import MutableList
@@ -24,6 +26,35 @@ class User(UserMixin, db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
+class APIKey(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    key_hash = db.Column(db.String(128), nullable=False, unique=True)
+    creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_used = db.Column(db.DateTime)
+    permissions = db.Column(MutableDict.as_mutable(JSON), default=dict)  # Store permissions as JSON
+    
+    creator = db.relationship('User', backref=db.backref('api_keys', lazy=True))
+    
+    @staticmethod
+    def generate_key():
+        """Generate a secure API key."""
+        alphabet = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(alphabet) for _ in range(32))
+    
+    def set_key(self, key):
+        """Hash and store the API key."""
+        self.key_hash = generate_password_hash(key)
+    
+    def check_key(self, key):
+        """Check if the provided key matches the stored hash."""
+        return check_password_hash(self.key_hash, key)
+    
+    def __repr__(self):
+        return f'<APIKey {self.name}>'
+
 class Survey(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
@@ -31,6 +62,11 @@ class Survey(db.Model):
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+    
+    # New fields for external forms
+    is_external = db.Column(db.Boolean, default=False)
+    external_url = db.Column(db.String(500))
+    form_type = db.Column(db.String(50), default='ai_generated')  # 'ai_generated' or 'external'
     
     creator = db.relationship('User', backref=db.backref('surveys', lazy=True))
     questions = db.relationship('Question', backref='survey', lazy=True, cascade='all, delete-orphan')
@@ -71,9 +107,20 @@ class SurveyResponse(db.Model):
     survey_id = db.Column(db.Integer, db.ForeignKey('survey.id'), nullable=False)
     respondent_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # New fields for detailed response data
+    session_id = db.Column(db.String(255))
+    form_status = db.Column(db.String(50))
+    utm_data = db.Column(MutableDict.as_mutable(JSON), default=dict) # Stores utm_source, utm_medium, etc.
+    ip_data = db.Column(MutableDict.as_mutable(JSON), default=dict)  # Stores session_ip, actual_ip, conversion_ip
+    click_data = db.Column(MutableDict.as_mutable(JSON), default=dict) # Stores suspicious and rejected clicks
+    browser = db.Column(db.String(255))
+    device_type = db.Column(db.String(255))
+    geolocation_data = db.Column(MutableDict.as_mutable(JSON), default=dict) # Stores city, country, lat/lon etc.
     
     respondent = db.relationship('User', backref=db.backref('responses', lazy=True))
     answers = db.relationship('Answer', backref='response', lazy=True, cascade='all, delete-orphan')
+    # postback_logs is defined as a backref in PostbackLog model
 
     def __repr__(self):
         return f'<SurveyResponse {self.id}>'
@@ -120,4 +167,28 @@ class PostbackLog(db.Model):
     response = db.relationship('SurveyResponse', backref=db.backref('postback_logs', lazy=True))
 
     def __repr__(self):
-        return f'<PostbackLog {self.id}>' 
+        return f'<PostbackLog {self.id}>'
+
+class ReceivedPostback(db.Model):
+    """Stores data received from external postbacks"""
+    id = db.Column(db.Integer, primary_key=True)
+    received_at = db.Column(db.DateTime, default=datetime.utcnow)
+    method = db.Column(db.String(10), nullable=False)  # GET, POST, etc.
+    url = db.Column(db.String(500), nullable=False)    # The URL that was called
+    headers = db.Column(JSON)                          # Request headers as JSON
+    query_params = db.Column(JSON)                     # Query parameters for GET requests
+    form_data = db.Column(JSON)                        # Form data for POST requests
+    json_data = db.Column(JSON)                        # JSON data for POST requests with Content-Type: application/json
+    raw_data = db.Column(db.Text)                      # Raw request data
+    source_ip = db.Column(db.String(45))               # IP address of the sender
+    
+    # For tracking and filtering
+    status = db.Column(db.String(20), default='received')  # received, processed, error
+    processing_time_ms = db.Column(db.Integer)             # Time taken to process in milliseconds
+    error_message = db.Column(db.Text)                     # Error message if processing failed
+    
+    # For linking to related data
+    reference_id = db.Column(db.String(100))          # External reference ID if provided
+    
+    def __repr__(self):
+        return f'<ReceivedPostback {self.id} {self.method} {self.url} {self.received_at}>'

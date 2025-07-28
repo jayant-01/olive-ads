@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+
+{% block title %}Postback Receiver Dashboard{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Postback Receiver Dashboard</h1>
+    <p class="text-muted">View and manage received postback data</p>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filters</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="method" class="form-label">Method</label>
+                    <select name="method" id="method" class="form-select">
+                        <option value="">All Methods</option>
+                        <option value="GET" {% if request.args.get('method') == 'GET' %}selected{% endif %}>GET</option>
+                        <option value="POST" {% if request.args.get('method') == 'POST' %}selected{% endif %}>POST</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Status</label>
+                    <select name="status" id="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option value="received" {% if request.args.get('status') == 'received' %}selected{% endif %}>Received</option>
+                        <option value="processed" {% if request.args.get('status') == 'processed' %}selected{% endif %}>Processed</option>
+                        <option value="error" {% if request.args.get('status') == 'error' %}selected{% endif %}>Error</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="date_from" class="form-label">From Date</label>
+                    <input type="date" class="form-control" id="date_from" name="date_from" value="{{ request.args.get('date_from', '') }}">
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Apply Filters</button>
+                    <a href="{{ url_for('postback_receiver_dashboard') }}" class="btn btn-outline-secondary">Reset</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Postbacks Table -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">Received Postbacks</h5>
+                <small class="text-muted d-block">Total: {{ postbacks.total }}</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-primary" onclick="window.location.href='{{ url_for('postback_receiver_dashboard', show_all='true', method='', status='', date_from='') }}'">
+                    <i class="bi bi-eye"></i> Show All
+                </button>
+                <button class="btn btn-outline-secondary" onclick="window.location.href='{{ url_for('postback_receiver_dashboard', show_all='false', method='', status='', date_from='') }}'">
+                    <i class="bi bi-funnel"></i> Show Filtered ({{ postbacks.per_page }} per page)
+                </button>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Received At</th>
+                            <th>Method</th>
+                            <th>Status</th>
+                            <th>Reference ID</th>
+                            <th>Source IP</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if postbacks.items %}
+                            {% for postback in postbacks.items %}
+                            <tr class="{% if postback.status == 'error' %}table-danger{% elif postback.status == 'processed' %}table-success{% endif %}">
+                                <td>{{ postback.id }}</td>
+                                <td>{{ postback.received_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td><span class="badge bg-{{ 'primary' if postback.method == 'GET' else 'success' }}">{{ postback.method }}</span></td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if postback.status == 'processed' else 'danger' if postback.status == 'error' else 'info' }}">
+                                        {{ postback.status|title }}
+                                    </span>
+                                </td>
+                                <td>{{ postback.reference_id or 'N/A' }}</td>
+                                <td>{{ postback.source_ip or 'N/A' }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary view-details" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#postbackDetailsModal" 
+                                            data-postback-id="{{ postback.id }}">
+                                        View Details
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-4">No postbacks found</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if not request.args.get('show_all') and postbacks.pages > 1 %}
+            <nav class="p-3">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if postbacks.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('postback_receiver_dashboard', page=postbacks.prev_num, method=request.args.get('method', ''), status=request.args.get('status', ''), date_from=request.args.get('date_from', '')) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in postbacks.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                        {% if page_num %}
+                            {% if postbacks.page == page_num %}
+                                <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                            {% else %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('postback_receiver_dashboard', page=page_num, method=request.args.get('method', ''), status=request.args.get('status', ''), date_from=request.args.get('date_from', '')) }}">{{ page_num }}</a>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if postbacks.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('postback_receiver_dashboard', page=postbacks.next_num, method=request.args.get('method', ''), status=request.args.get('status', ''), date_from=request.args.get('date_from', '')) }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Postback Details Modal -->
+<div class="modal fade" id="postbackDetailsModal" tabindex="-1" aria-labelledby="postbackDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="postbackDetailsModalLabel">Postback Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6>Request Information</h6>
+                    <table class="table table-sm table-bordered">
+                        <tr>
+                            <th style="width: 150px;">ID</th>
+                            <td id="detail-id"></td>
+                        </tr>
+                        <tr>
+                            <th>Received At</th>
+                            <td id="detail-received-at"></td>
+                        </tr>
+                        <tr>
+                            <th>Method</th>
+                            <td id="detail-method"></td>
+                        </tr>
+                        <tr>
+                            <th>URL</th>
+                            <td id="detail-url"></td>
+                        </tr>
+                        <tr>
+                            <th>Status</th>
+                            <td id="detail-status"></td>
+                        </tr>
+                        <tr>
+                            <th>Reference ID</th>
+                            <td id="detail-reference-id"></td>
+                        </tr>
+                        <tr>
+                            <th>Source IP</th>
+                            <td id="detail-source-ip"></td>
+                        </tr>
+                        <tr>
+                            <th>Processing Time</th>
+                            <td id="detail-processing-time"></td>
+                        </tr>
+                        {% if current_user.is_admin %}
+                        <tr>
+                            <th>Raw Headers</th>
+                            <td><pre class="mb-0"><code id="detail-headers"></code></pre></td>
+                        </tr>
+                        {% endif %}
+                    </table>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Request Data</h6>
+                    <ul class="nav nav-tabs" id="dataTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="query-params-tab" data-bs-toggle="tab" data-bs-target="#query-params" type="button" role="tab">
+                                Query Params
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="form-data-tab" data-bs-toggle="tab" data-bs-target="#form-data" type="button" role="tab">
+                                Form Data
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="json-data-tab" data-bs-toggle="tab" data-bs-target="#json-data" type="button" role="tab">
+                                JSON Data
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="raw-data-tab" data-bs-toggle="tab" data-bs-target="#raw-data" type="button" role="tab">
+                                Raw Data
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content p-3 border border-top-0 rounded-bottom" id="dataTabsContent">
+                        <div class="tab-pane fade show active" id="query-params" role="tabpanel">
+                            <pre class="mb-0"><code id="detail-query-params"></code></pre>
+                        </div>
+                        <div class="tab-pane fade" id="form-data" role="tabpanel">
+                            <pre class="mb-0"><code id="detail-form-data"></code></pre>
+                        </div>
+                        <div class="tab-pane fade" id="json-data" role="tabpanel">
+                            <pre class="mb-0"><code id="detail-json-data"></code></pre>
+                        </div>
+                        <div class="tab-pane fade" id="raw-data" role="tabpanel">
+                            <pre class="mb-0"><code id="detail-raw-data"></code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="error-details" class="d-none">
+                    <h6>Error Details</h6>
+                    <pre class="alert alert-danger p-3"><code id="detail-error-message"></code></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="retry-postback" style="display: none;">Retry</button>
+                <button type="button" class="btn btn-danger" id="delete-postback" data-postback-id="">
+                    <i class="fas fa-trash-alt"></i> Delete
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+$(document).ready(function() {
+    // Handle view details button click
+    $('.view-details').on('click', function() {
+        const postbackId = $(this).data('postback-id');
+        
+        // Show loading state
+        $('#postbackDetailsModal .modal-body').html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>');
+        
+        // Fetch postback details
+        $.get(`/api/postbacks/${postbackId}`, function(data) {
+            // Update modal content
+            $('#detail-id').text(data.id);
+            $('#detail-received-at').text(new Date(data.received_at).toLocaleString());
+            $('#detail-method').html(`<span class="badge bg-${data.method === 'GET' ? 'primary' : 'success'}">${data.method}</span>`);
+            $('#detail-url').text(data.url);
+            $('#detail-status').html(`<span class="badge bg-${data.status === 'processed' ? 'success' : data.status === 'error' ? 'danger' : 'info'}">${data.status}</span>`);
+            $('#detail-reference-id').text(data.reference_id || 'N/A');
+            $('#detail-source-ip').text(data.source_ip || 'N/A');
+            $('#detail-processing-time').text(data.processing_time_ms ? `${data.processing_time_ms} ms` : 'N/A');
+            
+            // Update data tabs
+            $('#detail-query-params').text(JSON.stringify(data.query_params || {}, null, 2));
+            $('#detail-form-data').text(JSON.stringify(data.form_data || {}, null, 2));
+            $('#detail-json-data').text(JSON.stringify(data.json_data || {}, null, 2));
+            $('#detail-raw-data').text(data.raw_data || 'No raw data');
+            
+            // Update error details if present
+            if (data.status === 'error' && data.error_message) {
+                $('#error-details').removeClass('d-none');
+                $('#detail-error-message').text(data.error_message);
+                $('#retry-postback').show();
+                $('#retry-postback').data('postback-id', data.id);
+            } else {
+                $('#error-details').addClass('d-none');
+                $('#retry-postback').hide();
+            }
+            
+            // Update delete button
+            $('#delete-postback').data('postback-id', data.id);
+            
+            // Show the modal content
+            $('#postbackDetailsModal .modal-body').html($('#postbackDetailsModal .modal-body').html());
+        }).fail(function() {
+            alert('Failed to load postback details');
+            $('#postbackDetailsModal').modal('hide');
+        });
+    });
+    
+    // Handle retry button click
+    $(document).on('click', '#retry-postback', function() {
+        const postbackId = $(this).data('postback-id');
+        if (!postbackId) return;
+        
+        if (confirm('Are you sure you want to retry this postback?')) {
+            // Show loading state
+            const $modalBody = $('#postbackDetailsModal .modal-body');
+            const originalContent = $modalBody.html();
+            $modalBody.html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Processing...</span></div></div>');
+            
+            // Send retry request
+            $.post(`/api/postbacks/${postbackId}/retry`, function(response) {
+                if (response.success) {
+                    alert('Postback retried successfully');
+                    location.reload();
+                } else {
+                    alert('Failed to retry postback: ' + (response.error || 'Unknown error'));
+                    $modalBody.html(originalContent);
+                }
+            }).fail(function() {
+                alert('Failed to retry postback');
+                $modalBody.html(originalContent);
+            });
+        }
+    });
+    
+    // Handle delete button click
+    $(document).on('click', '#delete-postback', function() {
+        const postbackId = $(this).data('postback-id');
+        if (!postbackId) return;
+        
+        if (confirm('Are you sure you want to delete this postback? This action cannot be undone.')) {
+            // Show loading state
+            const $modalBody = $('#postbackDetailsModal .modal-body');
+            const originalContent = $modalBody.html();
+            $modalBody.html('<div class="text-center p-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Deleting...</span></div></div>');
+            
+            // Send delete request
+            $.ajax({
+                url: `/api/postbacks/${postbackId}`,
+                method: 'DELETE',
+                success: function(response) {
+                    if (response.success) {
+                        alert('Postback deleted successfully');
+                        $('#postbackDetailsModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('Failed to delete postback: ' + (response.error || 'Unknown error'));
+                        $modalBody.html(originalContent);
+                    }
+                },
+                error: function() {
+                    alert('Failed to delete postback');
+                    $modalBody.html(originalContent);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

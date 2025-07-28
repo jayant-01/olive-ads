@@ -9,7 +9,14 @@
             <div class="card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="card-title mb-0">{{ survey.title }}</h2>
+                        <h2 class="card-title mb-0">
+                            {{ survey.title }}
+                            {% if survey.is_external %}
+                                <span class="badge bg-info ms-2">
+                                    <i class="fas fa-external-link-alt"></i> External
+                                </span>
+                            {% endif %}
+                        </h2>
                         <div>
                             <a href="{{ url_for('postback_configs', survey_id=survey.id) }}" class="btn btn-outline-primary me-2">
                                 <i class="fas fa-exchange-alt"></i> Postbacks
@@ -21,180 +28,127 @@
                     </div>
                     <p class="text-muted mb-4">{{ survey.description }}</p>
 
-                    <form method="POST" action="{{ url_for('submit_survey', survey_id=survey.id) }}" class="needs-validation" novalidate>
-                        {% for question in survey.questions|sort(attribute='order') %}
-                        <div class="mb-4">
-                            <label class="form-label">
-                                {{ question.question_text }}
+                    {% if survey.is_external %}
+                        <!-- External Form Display -->
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-info-circle"></i> External Form</h5>
+                            <p class="mb-3">This is an external form that will open in a new tab when accessed.</p>
+                            <div class="d-grid gap-2">
+                                <a href="{{ survey.external_url }}" target="_blank" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-external-link-alt"></i> Open External Form
+                                </a>
+                                <a href="{{ url_for('surveys') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to Surveys
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <div class="card mt-4">
+                            <div class="card-header">
+                                <h5 class="mb-0"><i class="fas fa-cog"></i> Form Settings</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>External URL:</strong>
+                                        <p class="text-break">{{ survey.external_url }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Form Type:</strong>
+                                        <p>{{ survey.form_type|title }}</p>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <strong>Created:</strong>
+                                        <p>{{ survey.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Status:</strong>
+                                        <p>
+                                            {% if survey.is_active %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Inactive</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- AI Generated Form Display -->
+                        <form method="POST" action="{{ url_for('submit_survey', survey_id=survey.id) }}" class="needs-validation" novalidate>
+                            {% for question in survey.questions|sort(attribute='order') %}
+                            <div class="mb-4">
+                                <label class="form-label">
+                                    {{ question.question_text }}
+                                    {% if question.is_required %}
+                                    <span class="text-danger">*</span>
+                                    {% endif %}
+                                </label>
+
+                                {% if question.question_type == 'text' %}
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="question_{{ question.id }}"
+                                       {% if question.is_required %}required{% endif %}
+                                       placeholder="Your answer">
+
+                                {% elif question.question_type == 'multiple_choice' %}
+                                <div class="list-group">
+                                    {% for option in question.options_list %}
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-1" 
+                                               type="radio" 
+                                               name="question_{{ question.id }}" 
+                                               value="{{ option }}"
+                                               {% if question.is_required %}required{% endif %}>
+                                        {{ option }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
+
+                                {% elif question.question_type == 'checkbox' %}
+                                <div class="list-group">
+                                    {% for option in question.options_list %}
+                                    <label class="list-group-item">
+                                        <input class="form-check-input me-1" 
+                                               type="checkbox" 
+                                               name="question_{{ question.id }}[]" 
+                                               value="{{ option }}">
+                                        {{ option }}
+                                    </label>
+                                    {% endfor %}
+                                </div>
                                 {% if question.is_required %}
-                                <span class="text-danger">*</span>
+                                <div class="invalid-feedback">
+                                    Please select at least one option.
+                                </div>
                                 {% endif %}
-                            </label>
-
-                            {% if question.question_type == 'text' %}
-                            <input type="text" 
-                                   class="form-control" 
-                                   name="question_{{ question.id }}"
-                                   {% if question.is_required %}required{% endif %}
-                                   placeholder="Your answer">
-
-                            {% elif question.question_type == 'multiple_choice' %}
-                            <div class="list-group">
-                                {% for option in question.options_list %}
-                                <label class="list-group-item">
-                                    <input class="form-check-input me-1" 
-                                           type="radio" 
-                                           name="question_{{ question.id }}" 
-                                           value="{{ option }}"
-                                           {% if question.is_required %}required{% endif %}>
-                                    {{ option }}
-                                </label>
-                                {% endfor %}
+                                {% endif %}
                             </div>
+                            {% endfor %}
 
-                            {% elif question.question_type == 'checkbox' %}
-                            <div class="list-group">
-                                {% for option in question.options_list %}
-                                <label class="list-group-item">
-                                    <input class="form-check-input me-1" 
-                                           type="checkbox" 
-                                           name="question_{{ question.id }}[]" 
-                                           value="{{ option }}">
-                                    {{ option }}
-                                </label>
-                                {% endfor %}
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-paper-plane"></i> Submit Survey
+                                </button>
+                                <a href="{{ url_for('surveys') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-arrow-left"></i> Back to Surveys
+                                </a>
                             </div>
-                            {% if question.is_required %}
-                            <div class="invalid-feedback">
-                                Please select at least one option.
-                            </div>
-                            {% endif %}
-                            {% endif %}
-                        </div>
-                        {% endfor %}
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg">
-                                <i class="fas fa-paper-plane"></i> Submit Survey
-                            </button>
-                            <a href="{{ url_for('surveys') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left"></i> Back to Surveys
-                            </a>
-                        </div>
-                    </form>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+{% if not survey.is_external %}
 <script>
-// Form validation
-// (function () {
-//     'use strict'
-//     var forms = document.querySelectorAll('.needs-validation')
-//     Array.prototype.slice.call(forms).forEach(function (form) {
-//         form.addEventListener('submit', function (event) {
-//             if (!form.checkValidity()) {
-//                 event.preventDefault()
-//                 event.stopPropagation()
-//             }
-            
-//             // Additional validation for required checkboxes
-//             form.querySelectorAll('input[type="checkbox"][required]').forEach(function(checkbox) {
-//                 var checkboxGroup = form.querySelectorAll(`input[name="${checkbox.name}"]`);
-//                 var checked = Array.from(checkboxGroup).some(cb => cb.checked);
-//                 if (!checked) {
-//                     event.preventDefault();
-//                     event.stopPropagation();
-//                     checkbox.closest('.list-group').classList.add('is-invalid');
-//                 } else {
-//                     checkbox.closest('.list-group').classList.remove('is-invalid');
-//                 }
-//             });
-            
-//             form.classList.add('was-validated')
-//         }, false)
-//     })
-// })()
-
-// (function () {
-//     'use strict'
-
-//     var forms = document.querySelectorAll('.needs-validation');
-    
-//     Array.prototype.slice.call(forms).forEach(function (form) {
-//         form.addEventListener('submit', async function (event) {
-//             console.log("hereeeeeeeeee");  // ✅ this will now print
-
-//             if (!form.checkValidity()) {
-//                 event.preventDefault();
-//                 event.stopPropagation();
-//             }
-
-//             // Additional validation for required checkboxes
-//             form.querySelectorAll('input[type="checkbox"][required]').forEach(function (checkbox) {
-//                 var checkboxGroup = form.querySelectorAll(`input[name="${checkbox.name}"]`);
-//                 var checked = Array.from(checkboxGroup).some(cb => cb.checked);
-//                 if (!checked) {
-//                     event.preventDefault();
-//                     event.stopPropagation();
-//                     checkbox.closest('.list-group').classList.add('is-invalid');
-//                 } else {
-//                     checkbox.closest('.list-group').classList.remove('is-invalid');
-//                 }
-//             });
-
-//             form.classList.add('was-validated');
-
-//             if (!form.checkValidity()) {
-//                 return;
-//             }
-
-//             // ✅ Build and send JSON data
-//             const formData = new FormData(form);
-//             // ✅ Extract formClone_RespondeId from URL query parameter
-//             const urlParams = new URLSearchParams(window.location.search);
-//             const formCloneRespondeId = urlParams.get('formClone_RespondeId');
-
-//             const jsonData = {
-//                 formClone_RespondeId: formCloneRespondeId
-//             };
-//             formData.forEach((value, key) => {
-//                 if (jsonData[key]) {
-//                     if (Array.isArray(jsonData[key])) {
-//                         jsonData[key].push(value);
-//                     } else {
-//                         jsonData[key] = [jsonData[key], value];
-//                     }
-//                 } else {
-//                     jsonData[key] = value;
-//                 }
-//             });
-
-//             try {
-//                 const response = await fetch("/send_to_oliver_ads", {
-//                     method: "POST",
-//                     headers: {
-//                         "Content-Type": "application/json"
-//                     },
-//                     body: JSON.stringify(jsonData)
-//                 });
-
-//                 if (!response.ok) {
-//                     throw new Error("Failed to send to oliver_ads via proxy: " + response.status);
-//                 }
-
-//                 const result = await response.json();
-//                 console.log("Success sending to oliver_ads:", result);
-//             } catch (err) {
-//                 console.error("Proxy request to oliver_ads failed:", err);
-//             }
-
-//         }, false);
-//     });
-// })();
-
+// Form validation for AI-generated forms only
 (function () {
     'use strict'
 
@@ -202,11 +156,12 @@
     
     Array.prototype.slice.call(forms).forEach(function (form) {
         form.addEventListener('submit', async function (event) {
-            console.log("Form submit initiated");
+            event.preventDefault(); // Always prevent default form submission first
+            event.stopPropagation(); // Stop event propagation
+            console.log("Form submit initiated. Default submission prevented.");
 
             if (!form.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
+                console.log("Form validation failed. Displaying errors.");
             }
 
             // Validate required checkboxes
@@ -214,9 +169,8 @@
                 var checkboxGroup = form.querySelectorAll(`input[name="${checkbox.name}"]`);
                 var checked = Array.from(checkboxGroup).some(cb => cb.checked);
                 if (!checked) {
-                    event.preventDefault();
-                    event.stopPropagation();
                     checkbox.closest('.list-group').classList.add('is-invalid');
+                    console.log("Checkbox group validation failed for:" + checkbox.name);
                 } else {
                     checkbox.closest('.list-group').classList.remove('is-invalid');
                 }
@@ -225,6 +179,7 @@
             form.classList.add('was-validated');
 
             if (!form.checkValidity()) {
+                console.log("Overall form invalid after custom validation. Returning.");
                 return;
             }
 
@@ -232,14 +187,42 @@
             const formData = new FormData(form);
             const urlParams = new URLSearchParams(window.location.search);
             const formCloneRespondeId = urlParams.get('formClone_RespondeId');
+            console.log("Client: formClone_RespondeId from URL:", formCloneRespondeId);
 
             const jsonData = {};
             if (formCloneRespondeId) {
-                jsonData["formClone_RespondeId"] = formCloneRespondeId;
+                jsonData["formClone_RespondeId"] = formCloneRespondeId; // Map to session_id on server
             }
 
+            // Extract UTMs from URL and add to jsonData
+            ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'].forEach(utmParam => {
+                const value = urlParams.get(utmParam);
+                if (value) {
+                    jsonData[utmParam] = value;
+                }
+            });
+            console.log("Client: UTMs added to JSON data:", { 
+                utm_source: jsonData.utm_source,
+                utm_medium: jsonData.utm_medium,
+                utm_campaign: jsonData.utm_campaign,
+                utm_content: jsonData.utm_content,
+                utm_term: jsonData.utm_term
+            });
+
+            // --- FOR TESTING CLICKS: You can uncomment and set these values manually for now ---
+            // jsonData['suspicious_clicks'] = 1;
+            // jsonData['rejected_clicks'] = 0;
+            // -----------------------------------------------------------------------------------
+
             formData.forEach((value, key) => {
-                if (jsonData[key]) {
+                // For checkbox groups, formData might list multiple values for the same key
+                if (key.endsWith('[]')) {
+                    const baseKey = key.slice(0, -2);
+                    if (!jsonData[baseKey]) {
+                        jsonData[baseKey] = [];
+                    }
+                    jsonData[baseKey].push(value);
+                } else if (jsonData[key]) {
                     if (Array.isArray(jsonData[key])) {
                         jsonData[key].push(value);
                     } else {
@@ -249,89 +232,34 @@
                     jsonData[key] = value;
                 }
             });
+            console.log("Client: Final JSON data prepared for sending:", jsonData);
 
-            // ✅ Only send to /send_to_oliver_ads if query param exists
-            if (formCloneRespondeId) {
-                try {
-                    const response = await fetch("/send_to_oliver_ads", {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(jsonData)
-                    });
+            // Send to /send_to_oliver_ads (unconditionally now)
+            try {
+                console.log("Attempting to send data to /send_to_oliver_ads...");
+                const response = await fetch("/send_to_oliver_ads", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(jsonData)
+                });
+                console.log("Response received from /send_to_oliver_ads.");
 
-                    if (!response.ok) {
-                        throw new Error("Failed to send to oliver_ads via proxy: " + response.status);
-                    }
-
-                    const result = await response.json();
-                    console.log("Success sending to oliver_ads:", result);
-                } catch (err) {
-                    console.error("Proxy request to oliver_ads failed:", err);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Failed to send to oliver_ads via proxy: ${response.status} - ${errorText}`);
                 }
-            } else {
-                console.log("No formClone_RespondeId provided. Skipping proxy request.");
+
+                const result = await response.json();
+                console.log("Success sending to oliver_ads:", result);
+            } catch (err) {
+                console.error("Proxy request to oliver_ads failed:", err);
             }
 
         }, false);
     });
 })();
-
-
-
-// // Send formClone_RespondeId on form submission
-// // Form validation + postback send
-// form.addEventListener('submit', async function (event) {
-//     console("hereeeeeeeeee")
-//     if (!form.checkValidity()) {
-//         event.preventDefault();
-//         event.stopPropagation();
-//         form.classList.add('was-validated');
-//         return;
-//     }
-
-//     // Gather form data into JSON
-//     const formData = new FormData(form);
-//     const jsonData = {};
-//     formData.forEach((value, key) => {
-//         if (jsonData[key]) {
-//             // If already an array, push
-//             if (Array.isArray(jsonData[key])) {
-//                 jsonData[key].push(value);
-//             } else {
-//                 jsonData[key] = [jsonData[key], value];
-//             }
-//         } else {
-//             jsonData[key] = value;
-//         }
-//     });
-
-//     // Send to proxy endpoint
-//     try {
-//         const response = await fetch("/send_to_oliver_ads", {
-//             method: "POST",
-//             headers: {
-//                 "Content-Type": "application/json"
-//             },
-//             body: JSON.stringify(jsonData)
-//         });
-
-//         if (!response.ok) {
-//             throw new Error("Failed to send to oliver_ads via proxy: " + response.status);
-//         }
-
-//         const result = await response.json();
-//         console.log("Success sending to oliver_ads:", result);
-//     } catch (err) {
-//         console.error("Proxy request to oliver_ads failed:", err);
-//     }
-
-//     // Continue with default form POST
-//     form.classList.add('was-validated');
-// });
-
-
-
 </script>
+{% endif %}
 {% endblock %} 

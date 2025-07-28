@@ -5,7 +5,7 @@
 {% block content %}
 <div class="container mt-4">
     <div class="welcome-section">
-        <h2><i class="bi bi-shield-check"></i> Admin Dashboard</h2>
+        <h2><i class="fas fa-shield-alt"></i> Admin Dashboard</h2>
         <p class="mb-0">Welcome back, {{ current_user.username }}! Here's what's happening with your platform.</p>
     </div>
 
@@ -19,7 +19,7 @@
                             <h3 class="mb-0">{{ total_users }}</h3>
                         </div>
                         <div class="stat-icon">
-                            <i class="bi bi-people"></i>
+                            <i class="fas fa-users"></i>
                         </div>
                     </div>
                 </div>
@@ -30,11 +30,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-2">Active Sessions</h6>
-                            <h3 class="mb-0">0</h3>
+                            <h6 class="text-muted mb-2">Total Surveys</h6>
+                            <h3 class="mb-0">{{ total_surveys }}</h3>
                         </div>
                         <div class="stat-icon">
-                            <i class="bi bi-activity"></i>
+                            <i class="fas fa-poll"></i>
                         </div>
                     </div>
                 </div>
@@ -45,11 +45,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-2">System Status</h6>
-                            <h3 class="mb-0">Healthy</h3>
+                            <h6 class="text-muted mb-2">Total Responses</h6>
+                            <h3 class="mb-0">{{ total_responses }}</h3>
                         </div>
                         <div class="stat-icon">
-                            <i class="bi bi-check-circle"></i>
+                            <i class="fas fa-chart-bar"></i>
                         </div>
                     </div>
                 </div>
@@ -62,17 +62,14 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">
-                        <i class="bi bi-clipboard-check"></i> Survey Management
+                        <i class="fas fa-users-cog"></i> User Management
                     </h5>
                     <div class="list-group mt-3">
-                        <a href="{{ url_for('surveys') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-list-check"></i> View All Surveys
+                        <a href="{{ url_for('admin_users') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-users"></i> View All Users
                         </a>
-                        <a href="{{ url_for('create_survey') }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-plus-circle"></i> Create New Survey
-                        </a>
-                        <a href="#" class="list-group-item list-group-item-action">
-                            <i class="bi bi-graph-up"></i> Survey Analytics
+                        <a href="#" class="list-group-item list-group-item-action disabled">
+                            <i class="fas fa-user-plus"></i> Add New User (Coming Soon)
                         </a>
                     </div>
                 </div>
@@ -82,22 +79,341 @@
             <div class="card">
                 <div class="card-body">
                     <h5 class="card-title">
-                        <i class="bi bi-gear"></i> Quick Actions
+                        <i class="fas fa-clipboard-check"></i> Survey & Response Management
                     </h5>
                     <div class="list-group mt-3">
-                        <a href="#" class="list-group-item list-group-item-action">
-                            <i class="bi bi-person-plus"></i> Add New User
+                        <a href="{{ url_for('surveys') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-list-check"></i> View My Surveys
                         </a>
-                        <a href="#" class="list-group-item list-group-item-action">
-                            <i class="bi bi-graph-up"></i> View Analytics
+                        <a href="{{ url_for('create_survey') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-plus-circle"></i> Create New Survey
                         </a>
-                        <a href="#" class="list-group-item list-group-item-action">
-                            <i class="bi bi-gear"></i> System Settings
+                        <a href="{{ url_for('admin_all_surveys') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-cogs"></i> Manage All Surveys
+                        </a>
+                        <a href="{{ url_for('admin_all_responses') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-chart-line"></i> View All Responses (Admin)
                         </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-key"></i> API Management
+                    </h5>
+                    <div class="list-group mt-3">
+                        <a href="{{ url_for('admin_api_keys') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-key"></i> Manage API Keys
+                        </a>
+                        <a href="{{ url_for('create_api_key') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-plus"></i> Create New API Key
+                        </a>
+                        <a href="{{ url_for('api_key_tester') }}" class="list-group-item list-group-item-action">
+                            <i class="fas fa-vial"></i> API Key Tester
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-info-circle"></i> API Information
+                    </h5>
+                    <div class="alert alert-info mb-0">
+                        <p class="mb-2"><strong>API Keys</strong> allow external websites to access your form data.</p>
+                        <p class="mb-0">Create API keys to enable integration with other platforms and websites.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Postback Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <i class="fas fa-exchange-alt"></i> Postback Statistics
+                    </h5>
+                    <div class="row mt-3">
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card stat-card info">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-muted mb-2">Total Postbacks</h6>
+                                            <h3 class="mb-0">{{ total_postbacks }}</h3>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-exchange-alt"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card stat-card success">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-muted mb-2">Today's Postbacks</h6>
+                                            <h3 class="mb-0">{{ postbacks_today }}</h3>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-calendar-day"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card stat-card {{ 'success' if postbacks_by_status.get('processed', 0) > 0 else 'secondary' }}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-muted mb-2">Processed</h6>
+                                            <h3 class="mb-0">{{ postbacks_by_status.get('processed', 0) }}</h3>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-check-circle"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6 mb-3">
+                            <div class="card stat-card {{ 'danger' if postbacks_by_status.get('error', 0) > 0 else 'secondary' }}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="text-muted mb-2">Errors</h6>
+                                            <h3 class="mb-0">{{ postbacks_by_status.get('error', 0) }}</h3>
+                                        </div>
+                                        <div class="stat-icon">
+                                            <i class="fas fa-exclamation-circle"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Postbacks Table -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history"></i> Recent Postbacks
+                    </h5>
+                    <a href="{{ url_for('receive_postback') }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt"></i> View All
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Time</th>
+                                    <th>Method</th>
+                                    <th>Status</th>
+                                    <th>Reference ID</th>
+                                    <th>Source IP</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if recent_postbacks %}
+                                    {% for postback in recent_postbacks %}
+                                    <tr class="{% if postback.status == 'error' %}table-danger{% elif postback.status == 'processed' %}table-success{% endif %}">
+                                        <td>{{ postback.id }}</td>
+                                        <td>{{ postback.received_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                        <td><span class="badge bg-{{ 'primary' if postback.method == 'GET' else 'success' }}">{{ postback.method }}</span></td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if postback.status == 'processed' else 'danger' if postback.status == 'error' else 'info' }}">
+                                                {{ postback.status|title }}
+                                            </span>
+                                        </td>
+                                        <td>{{ postback.reference_id or 'N/A' }}</td>
+                                        <td>{{ postback.source_ip or 'N/A' }}</td>
+                                        <td>
+                                            <a href="#" 
+                                               class="btn btn-sm btn-outline-primary view-postback-details"
+                                               data-bs-toggle="modal" 
+                                               data-bs-target="#postbackDetailsModal"
+                                               data-postback-id="{{ postback.id }}"
+                                               title="View Details">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4">No recent postbacks found</td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="postbackDetailsModal" tabindex="-1" aria-labelledby="postbackDetailsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="postbackDetailsModalLabel">Postback Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Basic Information</h6>
+                            <table class="table table-sm">
+                                <tr>
+                                    <th>ID:</th>
+                                    <td id="detail-id"></td>
+                                </tr>
+                                <tr>
+                                    <th>Received At:</th>
+                                    <td id="detail-received-at"></td>
+                                </tr>
+                                <tr>
+                                    <th>Method:</th>
+                                    <td id="detail-method"></td>
+                                </tr>
+                                <tr>
+                                    <th>Status:</th>
+                                    <td id="detail-status"></td>
+                                </tr>
+                                <tr>
+                                    <th>Source IP:</th>
+                                    <td id="detail-source-ip"></td>
+                                </tr>
+                                <tr>
+                                    <th>Reference ID:</th>
+                                    <td id="detail-reference-id"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Request Details</h6>
+                            <div class="mb-3">
+                                <label class="form-label">URL:</label>
+                                <div class="p-2 bg-light rounded">
+                                    <code id="detail-url"></code>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Query Parameters:</label>
+                                <pre class="p-2 bg-light rounded" id="detail-query-params" style="max-height: 150px; overflow-y: auto;"></pre>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <ul class="nav nav-tabs" id="postbackTabs" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="headers-tab" data-bs-toggle="tab" data-bs-target="#headers-content" type="button" role="tab">Headers</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="form-data-tab" data-bs-toggle="tab" data-bs-target="#form-data-content" type="button" role="tab">Form Data</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="json-data-tab" data-bs-toggle="tab" data-bs-target="#json-data-content" type="button" role="tab">JSON Data</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="raw-data-tab" data-bs-toggle="tab" data-bs-target="#raw-data-content" type="button" role="tab">Raw Data</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content p-3 border border-top-0 rounded-bottom" id="postbackTabsContent">
+                                <div class="tab-pane fade show active" id="headers-content" role="tabpanel">
+                                    <pre id="detail-headers" class="mb-0" style="max-height: 300px; overflow-y: auto;"></pre>
+                                </div>
+                                <div class="tab-pane fade" id="form-data-content" role="tabpanel">
+                                    <pre id="detail-form-data" class="mb-0" style="max-height: 300px; overflow-y: auto;"></pre>
+                                </div>
+                                <div class="tab-pane fade" id="json-data-content" role="tabpanel">
+                                    <pre id="detail-json-data" class="mb-0" style="max-height: 300px; overflow-y: auto;"></pre>
+                                </div>
+                                <div class="tab-pane fade" id="raw-data-content" role="tabpanel">
+                                    <pre id="detail-raw-data" class="mb-0" style="max-height: 300px; overflow-y: auto;"></pre>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% block scripts %}
+    {{ super() }}
+    <script>
+        // Initialize tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tooltips
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Postback details modal
+            var postbackDetailsModal = document.getElementById('postbackDetailsModal');
+            if (postbackDetailsModal) {
+                postbackDetailsModal.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var postbackId = button.getAttribute('data-postback-id');
+                    
+                    // Fetch postback details
+                    fetch(`/api/postbacks/${postbackId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Update modal content with the fetched data
+                            document.getElementById('detail-id').textContent = data.id;
+                            document.getElementById('detail-received-at').textContent = new Date(data.received_at).toLocaleString();
+                            document.getElementById('detail-method').innerHTML = `<span class="badge bg-${data.method === 'GET' ? 'primary' : 'success'}">${data.method}</span>`;
+                            document.getElementById('detail-status').innerHTML = `<span class="badge bg-${data.status === 'processed' ? 'success' : data.status === 'error' ? 'danger' : 'info'}">${data.status}</span>`;
+                            document.getElementById('detail-source-ip').textContent = data.source_ip || 'N/A';
+                            document.getElementById('detail-reference-id').textContent = data.reference_id || 'N/A';
+                            document.getElementById('detail-url').textContent = data.url;
+                            
+                            // Update tabs content
+                            document.getElementById('detail-headers').textContent = JSON.stringify(data.headers || {}, null, 2);
+                            document.getElementById('detail-query-params').textContent = JSON.stringify(data.query_params || {}, null, 2);
+                            document.getElementById('detail-form-data').textContent = JSON.stringify(data.form_data || {}, null, 2);
+                            document.getElementById('detail-json-data').textContent = JSON.stringify(data.json_data || {}, null, 2);
+                            document.getElementById('detail-raw-data').textContent = data.raw_data || 'No raw data available';
+                        })
+                        .catch(error => {
+                            console.error('Error fetching postback details:', error);
+                            alert('Failed to load postback details. Please try again.');
+                        });
+                });
+            }
+        });
+    </script>
+    {% endblock %}
 </div>
-{% endblock %} 
+{% endblock %}
